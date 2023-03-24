@@ -1,0 +1,5 @@
+labels.npy
+boards.npy
+model.pth
+model_test.pth
+
