@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go Game</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        table {
+            border-collapse: collapse;
+            background-color: #f1c289;
+            border: 1px solid black;
+        }
+        td {
+            width: 40px;
+            height: 40px;
+            position: relative;
+            border: 1px solid black;
+            line-height: 0;
+            padding: 0;
+        }
+        .stone {
+            display: inline-block;
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+            margin: 10%;
+        }
+        .black {
+            background-color: black;
+        }
+        .white {
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <table id="board">
+        <!-- The game board will be populated here -->
+    </table>
+    <script>
+        const boardSize = 19;
+        const boardElem = document.getElementById('board');
+
+        let board = Array(boardSize).fill(null).map(() => Array(boardSize).fill(-1));
+
+        function renderBoard() {
+            let html = '';
+            for (let row = 0; row < boardSize; row++) {
+                html += '<tr>';
+                for (let col = 0; col < boardSize; col++) {
+                    const cellClass = board[row][col] === 0 ? 'black' : board[row][col] === 1 ? 'white' : '';
+                    html += `<td data-row="${row}" data-col="${col}">${cellClass ? '<span class="stone ' + cellClass + '"></span>' : ''}</td>`;
+                }
+                html += '</tr>';
+            }
+            boardElem.innerHTML = html;
+        }
+
+        boardElem.addEventListener('click', async (event) => {
+            const target = event.target.closest('td');
+            if (!target) return;
+
+            const row = parseInt(target.dataset.row);
+            const col = parseInt(target.dataset.col);
+
+            if (board[row][col] !== -1) return; // Ignore occupied cells
+
+            board[row][col] = 0; // Place a black stone
+            renderBoard();
+
+            const response = await fetch('/api/make_move', {
+                method: 'POST',
+                body: new URLSearchParams({
+                    board: board.flat().join(' ').replace(/-1/g, '-1 '),
+                    player: 1
+                })
+            });
+
+            const data = await response.json();
+            board = data.board.split('\n').map(row => row.split(' ').map(Number));
+            renderBoard();
+        });
+
+        renderBoard();
+    </script>
+</body>
+</html>
