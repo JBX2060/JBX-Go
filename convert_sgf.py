@@ -27,7 +27,7 @@ def process_files_in_parallel(file_paths, max_workers=16):
 
     soft_run = True
     if soft_run:
-        file_paths = file_paths[:2000]
+        file_paths = file_paths[:4000]
 
     with Pool(processes=max_workers) as pool:
         results = pool.imap_unordered(process_file, file_paths)
@@ -180,10 +180,6 @@ def format_board_test(board):
     board_arr[b_mask] = 1
     board_arr[w_mask] = 0
 
-    # Return the formatted board
-    Folderpath = 'images'
-    for ele in os.scandir(Folderpath):
-        size+=os.stat(ele).st_size
 
     if os.path.exists('board_test.py'):
         print("Skipping checks!")

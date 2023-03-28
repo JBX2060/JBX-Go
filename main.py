@@ -70,9 +70,12 @@ train_labels = torch.from_numpy(train_labels)
 validation_boards = torch.from_numpy(validation_boards)
 validation_labels = torch.from_numpy(validation_labels)
 
+# Mem runs out
 
 train_boards = train_boards.to(device)
 train_labels = train_labels.to(device)
+# A portion for each epoch
+
 validation_boards = validation_boards.to(device)
 validation_labels = validation_labels.to(device)
 
@@ -85,9 +88,19 @@ labels = torch.from_numpy(labels)
 
 boards = boards.reshape(len(boards), 361)
 
-boards = boards.to(device)
-labels = labels.to(device)
+# boards = boards.to(device)
+# labels = labels.to(device)
 
+
+
+### Dataloader 
+
+import os
+import pandas as pd
+from torchvision.io import read_image
+from torch.utils.data import Dataset, DataLoader
+
+train_loader = DataLoader(list(zip(boards,labels)), shuffle=True, batch_size=16)
 
 # print(boards[1])
 
@@ -158,13 +171,19 @@ def training_loop(n_epochs):
         correct = 0
         wrong = 0
         total_loss = 0
+        test_correct = 0
+        test_wrong = 0
+
         print(f"EPOCH {epoch_idx}")
 
-        for i in range(0, len(boards), batch_size):
-            # label = labels[i]
+        for i, (inputs, labels) in enumerate(train_loader):
+            board_batch, labels_batch = inputs.to(device), labels.to(device)
 
-            labels_batch = labels[i:i+batch_size]
-            board_batch = boards[i:i+batch_size]
+        # for i in range(0, len(boards), batch_size):
+        #     # label = labels[i]
+
+        #     labels_batch = labels[i:i+batch_size]
+        #     board_batch = boards[i:i+batch_size]
             
             # logits -> probabilities via softmax
             # [5.235, -0.0323, 0.2] -> [0.75, 0.1, 0.15]
@@ -192,12 +211,28 @@ def training_loop(n_epochs):
                     correct += 1
                 else:
                     wrong += 1
+
+        print(f"Evaluating epoch: {epoch_idx}")
+        for k in range(len(validation_boards)):
+            # Validation
+            with torch.no_grad():
+                validation_output = GoBot(validation_boards[k])
+
+            if validation_output == validation_labels[k]:
+                test_correct += 1
             
-            
+            test_wrong +=1
+
+        
         total_times = correct + wrong
+        total_test_times = test_correct + test_wrong
 
         accuracy = correct / total_times * 100
+        test_accuracy = test_correct / total_test_times * 100
+
         print("Accuracy: ", accuracy)
+        print("Test Accuracy: ", test_accuracy)
+
         print("Avg Loss: ", total_loss / total_times)
 
         try:
@@ -207,8 +242,5 @@ def training_loop(n_epochs):
             print("Saving ...")
             torch.save(GoBot.state_dict(), "model.pth")
             sys.exit()
-        
-        # print("Correct: ", correct)
-        # print("Wrong: ", wrong)
 
 training_loop(10000)
