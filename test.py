@@ -1,14 +1,20 @@
+# Standard library imports
 import os
-import torch
-import numpy as np
 import sys
 
+# Third-party imports
+import torch
+import numpy as np
 from torch import nn
 from torch.utils.data import DataLoader
-from torchvision import datasets, transforms
-from convert_sgf import process_files_in_parallel
 from sklearn.model_selection import train_test_split
+from torchvision import datasets, transforms
+
+# Local application imports
+from convert_sgf import process_files_in_parallel
 from visualize import create_go_board_image
+from early_stopping import EarlyStopper
+
 
 # Global Varibles
 loss_fn = nn.CrossEntropyLoss()
@@ -28,6 +34,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # Training set: 80%
 # Validation set: 20%
 # Check if the processed boards and labels are already saved
+# if __name__ == '__main__':
 if os.path.exists("boards.npy") and os.path.exists("labels.npy"):
     # Load the processed boards and labels
     print("Loading Training Dataset...")
@@ -48,9 +55,6 @@ else:
 
 # Combine boards and labels
 data = list(zip(boards, labels))
-
-# Shuffle the data
-np.random.shuffle(data)
 
 # Split the data into training and validation sets (80% training, 20% validation)
 train_data, validation_data = train_test_split(data, test_size=0.2, random_state=42)
@@ -133,7 +137,7 @@ class ResidualBlock(nn.Module):
         return out
 
 class Model(nn.Module):
-    def __init__(self, num_res_blocks=6, channels=128):
+    def __init__(self, num_res_blocks=18, channels=128):
         super(Model, self).__init__()
         self.conv_input = nn.Conv2d(3, channels, kernel_size=3, padding=1)
 
@@ -186,18 +190,13 @@ print("Using ", device)
 optim = torch.optim.Adam(GoBot.parameters(), learning_rate)
 
 def training_loop(n_epochs):
-    # My plan is to loop through the training data files. Train the model on ONE file at a time. 
-    # After a complete loop that would be one epoch.
-    # Then I would loop through the validation data files. To determine the accuracy of the model.
-    # I would then save the model if the accuracy is better than the previous model.
-    # Loop through files
-
 
     for epoch_idx in range(n_epochs):
 
         correct = 0
         wrong = 0
         total_loss = 0
+        test_total_loss = 0
         test_correct = 0
         test_wrong = 0
 
@@ -215,7 +214,7 @@ def training_loop(n_epochs):
 
             board_batch = board_batch.reshape(-1, 19, 19)
 
-            if board_batch % 50 == 0:
+            if (board_batch % 50 == 0).all():
                 create_go_board_image(board_batch[0].cpu().numpy(), f"images/epoch_{epoch_idx}_batch_{board_batch}.png")
 
 
@@ -240,11 +239,15 @@ def training_loop(n_epochs):
         print(f"Evaluating epoch: {epoch_idx}")
 
         for test_batch, (inputs, labels) in enumerate(test_loader):
+
             board_batch, labels_batch = inputs.to(device), labels.to(device)
             # Validation
             with torch.no_grad():
                 validation_output = GoBot(board_batch)
             
+            test_loss = loss_fn(validation_output, labels_batch)
+            test_total_loss = test_total_loss + test_total_loss
+
             validation_output = validation_output.argmax(dim=1)
 
             correct_labels = validation_output == labels_batch
@@ -262,6 +265,13 @@ def training_loop(n_epochs):
         print("Test Accuracy: ", test_accuracy)
 
         print("Avg Loss: ", total_loss / total_times)
+        print(f"Avg Test Loss: {test_total_loss / total_test_times}")
+
+        early_stopper = EarlyStopper(patience=3, min_delta=10)
+        
+        if early_stopper.early_stop(test_total_loss / total_test_times):
+            print("We are at epoch:", epoch_idx)             
+            break
             
 
         try:
@@ -274,93 +284,7 @@ def training_loop(n_epochs):
         
         # print("Correct: ", correct)
         # print("Wrong: ", wrong)
-
-# #Helper function to upscale or downscale the model weights.
-# def fit_pretrained_weights(source_state_dict, target_model):
-#     target_state_dict = target_model.state_dict()
-#     for name, param in source_state_dict.items():
-#         if name not in target_state_dict:
-#             continue
-#         if isinstance(param, torch.nn.Parameter):
-#             # backwards compatibility for serialized parameters
-#             param = param.data
-#         if param.size() != target_state_dict[name].size():
-#             # Scale the weights
-#             target_state_dict[name].copy_(torch.nn.functional.interpolate(param.unsqueeze(0), 
-#                                                                           size=target_state_dict[name].size(), 
-#                                                                           mode='bilinear', 
-#                                                                           align_corners=False).squeeze(0))
-#         else:
-#             target_state_dict[name].copy_(param)
-#     return target_model
-
-# #create new_model #Muation functions.
-# def create_new_model(model):
-#     numx_res_blocks = range(1, 100)
-#     # Transfer the weights of the pre-trained model
-#     state_dict_x = model.state_dict()
-#     child_model =  Model(num_res_blocks=numx_res_blocks)
-#     child_model_loaded = fit_pretrained_weights(state_dict_x, child_model)
-#     return child_model_loaded
-
-# # Create a fitness function
-# def fitness(model):
-#     train_loss = 0.0
-#     num_correct = 0
-#     num_samples = 0
-#     with torch.no_grad():
-#         for inputs, targets in train_loader:
-#             # Move the inputs and targets to the device (e.g. GPU)
-#             inputs = inputs.to(device)
-#             targets = targets.to(device)
-
-#             # Forward pass
-#             outputs = model(inputs)
-
-#             # Calculate the loss
-#             loss = loss_fn(outputs, targets)
-
-#             # Update the test loss and accuracy
-#             train_loss += loss.item() * inputs.size(0)
-#             _, predictions = torch.max(outputs, 1)
-#             num_correct += (predictions == targets).sum().item()
-#             num_samples += targets.size(0)
-
-#     train_loss /= len(boards)
-
-#     return train_loss
-
-# # Logic for the greedy or evolutionary
-# population  = 10
-# generations = 10
-
-# global_model_num = 0
-# models = {} # Index 0: Model intance, Index 1: fitness score
-
-# model = Model()
-# model.load_state_dict(torch.load("model_test.pth"))
-
-# models[f'Model_{global_model_num}'] = [model] # Instance
-# models[f'Model_{global_model_num}'].append((model, fitness(model))) # Tuple of (instance, fitness)
-# global_model_num+= 1
-
-# for i in range(genearations):
-#     if genearations != 0:
-#         #Sort the models based on their fitness scores
-#         ranked_models = dict(sorted(models.items(), key=lambda x: x[1][1]))
-#         # Pick the best model
-#         for i, k in enumerate(list(my_dict.keys())):
-#             if i != 0:
-#                 del my_dict[k]
-
-#     for j in range(population-1):
-#         child_model = create_new_model(next(iter(models.items))[0])
-#         models[f'Model_{global_model_num}'] = child_model
-#         models[f'Model_{global_model_num}'].append(fitness(child_model))
-    
-#     print(models)
-#     print(f"Generation {i}")
-
+# import nueral_search
 
 if __name__ == '__main__':
     training_loop(10000)
