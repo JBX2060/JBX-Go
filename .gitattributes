@@ -1,0 +1,1 @@
+proccesed_data/boards_kata_medium.npy filter=lfs diff=lfs merge=lfs -text
