@@ -61,7 +61,7 @@ class Model(nn.Module):
 
         self.conv_input = nn.Conv2d(3, channels, kernel_size=3, padding=1)
 
-        self.conv1 = nn.Conv2d(input_channels, hidden_channels, kernel_size=3, padding=1)
+        self.conv1 = nn.Conv2d(channels, channels, kernel_size=3, padding=1)
 
         self.bn_input = nn.BatchNorm2d(channels)
 
