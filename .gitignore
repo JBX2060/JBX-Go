@@ -2,3 +2,5 @@ labels.npy
 boards.npy
 model.pth
 model_test.pth
+boards_large.npy
+labels_large.npy

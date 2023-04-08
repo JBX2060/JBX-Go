@@ -75,7 +75,7 @@ class Model(nn.Module):
         self.relu_policy = nn.ReLU(inplace=True)
         self.fc_policy = nn.Linear(2 * 19 * 19, 361)
 
-        self.softmax = nn.Softmax(dim=1)
+        # self.softmax = nn.Softmax(dim=1)
 
 
     def forward(self, board):
@@ -98,7 +98,7 @@ class Model(nn.Module):
         policy = policy.view(policy.size(0), -1)
         # apply the fully connected layer to the output of the convolutional layer
         policy = self.fc_policy(policy)
-        policy = self.softmax(policy)
+        # policy = self.softmax(policy)
 
         return policy
 
