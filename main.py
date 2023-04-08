@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 def main():
     loss_fn = nn.CrossEntropyLoss()
     learning_rate = 0.0001
-    batch_size = 350
+    batch_size = 1150
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("Using ", device)

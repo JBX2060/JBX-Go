@@ -35,9 +35,10 @@ import random
 #create new_model #Muation functions.
 def create_new_model(model):
     numx_res_blocks = random.randint(1, 100)
+    numx_channels = random.randint(32, 512)  # You can adjust the range as needed
     # Transfer the weights of the pre-trained model
     state_dict_x = model.state_dict()
-    child_model =  Model(num_res_blocks=numx_res_blocks)
+    child_model =  Model(num_res_blocks=numx_res_blocks, num_channels=numx_channels)
     child_model_loaded = fit_pretrained_weights(state_dict_x, child_model)
 
     child_model_loaded.to(device)
