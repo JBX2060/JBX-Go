@@ -1,7 +1,7 @@
 import sys
 import torch
-from early_stopping import EarlyStopper
-from visualize import create_go_board_image
+from modules.early_stopping import EarlyStopper
+from modules.visualize import create_go_board_image
 
 from tqdm import tqdm
 from torch.cuda.amp import GradScaler, autocast

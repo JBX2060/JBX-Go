@@ -1,21 +1,32 @@
 import os
 import numpy as np
 from sklearn.model_selection import train_test_split
-from convert_sgf import process_files_in_parallel
+from modules.convert_sgf import process_files_in_parallel
+
+large = True
+
+if large:
+    boards_path = 'boards_large.npy'
+    labels_path = 'labels_large.npy'
+else:
+    boards_path = 'boards.npy'
+    labels_path = 'labels.npy'
 
 
 def load_data():
-    if os.path.exists("boards.npy") and os.path.exists("labels.npy"):
+    if os.path.exists(boards_path) and os.path.exists(labels_path):
         print("Loading Training Dataset...")
-        boards = np.load("boards.npy")
-        labels = np.load("labels.npy")
+        boards = np.load(boards_path)
+        labels = np.load(labels_path
+    )
+
     else:
         print("Processing data...")
-        file_paths = [os.path.join("bot_data/2020-12-28rating", file_name) for file_name in os.listdir("bot_data/2020-12-28rating")]
+        file_paths = [os.path.join("bot_data/kata", file_name) for file_name in os.listdir("bot_data/kata")]
         boards, labels = process_files_in_parallel(file_paths)
 
-        np.save("boards.npy", boards)
-        np.save("labels.npy", labels)
+        np.save(boards_path, boards)
+        np.save(labels_path, labels)
 
     return boards, labels
 

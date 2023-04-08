@@ -3,7 +3,7 @@ from sgfmill.boards import Board
 from sgfmill.ascii_boards import render_board
 from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
 from multiprocessing import Pool
-from visualize import create_go_board_image
+from modules.visualize import create_go_board_image
 import numpy as np
 import copy
 import os
@@ -25,7 +25,7 @@ def process_files_in_parallel(file_paths, max_workers=16):
 
     # print("running!")
 
-    soft_run = True
+    soft_run = False
     if soft_run:
         file_paths = file_paths[:4000]
 

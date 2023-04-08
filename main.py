@@ -1,8 +1,8 @@
 import torch
 from torch import nn
-from data_preparation import load_data, prepare_data
-from model import Model, load_model
-from train import training_loop
+from modules.data_preparation import load_data, prepare_data
+from modules.model import Model, load_model
+from modules.train import training_loop
 from torch.utils.data import DataLoader
 
 def main():
