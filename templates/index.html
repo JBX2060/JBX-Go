@@ -4,13 +4,89 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GoBot</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='wgo.js/wgo/wgo.min.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/waltheri/wgo.js@master/wgo/wgo.player.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="{{ url_for('static', filename='wgo.js/wgo/wgo.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/gh/waltheri/wgo.js/wgo/wgo.min.js"></script>
 </head>
 <body>
     <h1>Play Go against GoBot</h1>
     <div id="board" style="width: 760px; height: 760px; margin: 0 auto;"></div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var boardElement = document.getElementById("board");
+            var board = new WGo.Board(document.getElementById("board"), {
+            width: 760,
+            height: 760,
+            size: 19,
+        });
+        var game = new WGo.Game();
+
+        function boardToArray(game) {
+    var array = [];
+    var position = game.get();
+    for (var x = 0; x < position.size; x++) {
+        for (var y = 0; y < position.size; y++) {
+            var stone = position.get(x, y);
+            array.push(stone);
+        }
+    }
+    return array;
+}
+function getBotMove(boardArray, callback) {
+    $.ajax({
+        url: '/move', // Make sure this matches the route in your app.py
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ board: boardArray }),
+        success: function (response) {
+            var move = response.move;
+            var x = Math.floor(move / board.size);
+            var y = move % board.size;
+            callback({ x: x, y: y });
+        }
+    });
+}
+
+function gameToBoardArray(game) {
+    var array = [];
+    for (var x = 0; x < game.size; x++) {
+        for (var y = 0; y < game.size; y++) {
+            var stone = game.getStone(x, y);
+            array.push(stone);
+        }
+    }
+    return array;
+}
+
+function botMove() {
+    var boardArray = gameToBoardArray(game);
+    console.log(boardArray); // Log the current board state
+
+    getBotMove(boardArray, function (move) {
+        game.play(move.x, move.y, WGo.W); // Add the bot's move to the game object
+        board.addObject({ // Display the bot's move on the board
+            x: move.x,
+            y: move.y,
+            c: WGo.W
+        });
+    });
+}
+
+board.addEventListener("click", function (x, y) {
+    if (game.getStone(x, y) === 0) { // Check if the position is empty
+        game.play(x, y, WGo.B); // Add your move to the game object
+        board.addObject({
+            x: x,
+            y: y,
+            c: WGo.B
+        });
+
+        setTimeout(botMove, 1000); // Wait for 1 second (1000 milliseconds) before displaying the bot's move
+    }
+});
+        }); 
+
+
+    </script>
 </body>
 </html>

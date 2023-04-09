@@ -1,53 +1,53 @@
-$(document).ready(function () {
-    const boardSize = 19;
-
-    const board = new WGo.Board(document.getElementById("board"), {
-        width: 760,
-        size: boardSize,
-    });
-
+document.addEventListener("DOMContentLoaded", function () {
+    var boardElement = document.getElementById("board");
+    var board = new WGo.Board(boardElement, { size: 19 });
+    var game = new WGo.Game();
+  
     board.addEventListener("click", function (x, y) {
-        if (board.obj_arr[x][y].length === 0) {
-            board.addObject({
-                x: x,
-                y: y,
-                type: WGo.Board.drawHandlers.GO,
-                c: WGo.B,
-            });
-
-            // Send the board state to the server to get the bot's move
-            makeMove(board.obj_arr);
-        }
-    });
-
-    function makeMove(boardState) {
-        let flatBoard = [];
-        for (let x = 0; x < boardSize; x++) {
-            for (let y = 0; y < boardSize; y++) {
-                const obj = boardState[x][y];
-                flatBoard.push(obj.length === 0 ? -1 : obj[0].c === WGo.B ? 0 : 1);
-            }
-        }
-
-        $.ajax({
-            type: "POST",
-            url: "/move",
-            contentType: "application/json",
-            data: JSON.stringify({ board: flatBoard }),
-            success: function (response) {
-                const move = response.move;
-                const x = move % boardSize;
-                const y = Math.floor(move / boardSize);
-
-                if (board.obj_arr[x][y].length === 0) {
-                    board.addObject({
-                        x: x,
-                        y: y,
-                        type: WGo.Board.drawHandlers.GO,
-                        c: WGo.W,
-                    });
-                }
-            },
+      if (game.isValid(x, y)) {
+        var move = { x: x, y: y, c: game.turn };
+        game.play(move);
+        board.addObject({
+          x: move.x,
+          y: move.y,
+          c: move.c,
+          type: "STONE",
         });
+  
+        fetchMove(game.getBoard());
+      }
+    });
+  
+    function fetchMove(goBoard) {
+      var boardArray = [];
+      for (var x = 0; x < 19; x++) {
+        for (var y = 0; y < 19; y++) {
+          boardArray.push(goBoard.get(x, y));
+        }
+      }
+  
+      $.ajax({
+        url: "/move",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ board: boardArray }),
+        success: function (data) {
+          var move = data.move;
+          var x = move % 19;
+          var y = Math.floor(move / 19);
+  
+          if (game.isValid(x, y)) {
+            var botMove = { x: x, y: y, c: game.turn };
+            game.play(botMove);
+            board.addObject({
+              x: botMove.x,
+              y: botMove.y,
+              c: botMove.c,
+              type: "STONE",
+            });
+          }
+        },
+      });
     }
-});
+  });
+  
