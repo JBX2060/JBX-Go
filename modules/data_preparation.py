@@ -3,17 +3,12 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from modules.convert_sgf import process_files_in_parallel
 
-large = False
-full = True
-if large:
-    boards_path = 'proccesed_data/boards_large.npy'
-    labels_path = 'proccesed_data/labels_large.npy'
-elif full = True:
-    boards_path = 'proccesed_data/boards_large.npy'
-    labels_path = 'proccesed_data/labels_large.npy'
-else:
-    boards_path = 'proccesed_data/boards.npy'
-    labels_path = 'proccesed_data/labels.npy'
+
+# 'boards_full.npy', 'labels_full.npy', 'boards_large.npy', 'labels_large.npy', 'boards.npy', 'labels.npy'
+boards_path = 'proccesed_data/boards_extra_full.npy'
+labels_path = 'proccesed_data/labels_extra_full.npy'
+
+procces_data_path = 'bot_data/kata2'
 
 
 def load_data():
@@ -25,7 +20,7 @@ def load_data():
 
     else:
         print("Processing data...")
-        file_paths = [os.path.join("bot_data/kata", file_name) for file_name in os.listdir("bot_data/kata")]
+        file_paths = [os.path.join(procces_data_path, file_name) for file_name in os.listdir(procces_data_path)]
         boards, labels = process_files_in_parallel(file_paths)
 
         np.save(boards_path, boards)
