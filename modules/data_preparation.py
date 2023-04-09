@@ -3,14 +3,17 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from modules.convert_sgf import process_files_in_parallel
 
-large = True
-
+large = False
+full = True
 if large:
-    boards_path = 'boards_large.npy'
-    labels_path = 'labels_large.npy'
+    boards_path = 'proccesed_data/boards_large.npy'
+    labels_path = 'proccesed_data/labels_large.npy'
+elif full = True:
+    boards_path = 'proccesed_data/boards_large.npy'
+    labels_path = 'proccesed_data/labels_large.npy'
 else:
-    boards_path = 'boards.npy'
-    labels_path = 'labels.npy'
+    boards_path = 'proccesed_data/boards.npy'
+    labels_path = 'proccesed_data/labels.npy'
 
 
 def load_data():

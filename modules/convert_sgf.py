@@ -4,7 +4,9 @@ from sgfmill.ascii_boards import render_board
 from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
 from multiprocessing import Pool
 from modules.visualize import create_go_board_image
+
 import numpy as np
+from tqdm import tqdm
 import copy
 import os
 
@@ -32,17 +34,14 @@ def process_files_in_parallel(file_paths, max_workers=16):
     with Pool(processes=max_workers) as pool:
         results = pool.imap_unordered(process_file, file_paths)
 
-        for result in results:
-            for formatted_board, game_label in result:
-                #if formatted_board.size == 0 or not game_label:
-                #    continue
-                all_boards.append(formatted_board)
-                all_labels.append(game_label)
-                # print(f"Loading board from file: {file_paths}")
-                
-                # Free up memory, still does not work :(
-                del formatted_board
-                del game_label
+        with tqdm(total=len(file_paths)) as pbar:
+            for result in results:
+                for formatted_board, game_label in result:
+                    all_boards.append(formatted_board)
+                    all_labels.append(game_label)
+                    del formatted_board
+                    del game_label
+                pbar.update()
 
     return all_boards, all_labels
 
