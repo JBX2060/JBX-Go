@@ -20,7 +20,7 @@ def training_loop(model, device, train_loader, test_loader, optim, loss_fn, n_ep
         print(f"EPOCH {epoch_idx}")
 
         # Wrap the train_loader with tqdm for a progress bar
-        for inputs, labels in tqdm(train_loader, desc="Training"):
+        for i, (inputs, labels) in tqdm(enumerate(train_loader), desc="Training"):
             board_batch, labels_batch = inputs.to(device), labels.to(device)
 
             # Use autocast for mixed-precision training
@@ -39,6 +39,9 @@ def training_loop(model, device, train_loader, test_loader, optim, loss_fn, n_ep
             wrong += (output_index != labels_batch).sum().item()
 
             total_loss += loss.item()
+
+            create_go_board_image(board_batch[0].cpu().numpy(), f"images/epoch_{epoch_idx}_batch_{i}.png")
+
 
         # Wrap the test_loader with tqdm for a progress bar
         for inputs, labels in tqdm(test_loader, desc="Evaluating"):
@@ -68,6 +71,7 @@ def training_loop(model, device, train_loader, test_loader, optim, loss_fn, n_ep
         print(f"Avg Test Loss: {test_total_loss / total_test_times}")
 
         early_stopper = EarlyStopper(patience=3, min_delta=10)
+
 
         if early_stopper.early_stop(test_total_loss / total_test_times):
             print("We are at epoch:", epoch_idx)

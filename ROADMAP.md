@@ -14,5 +14,5 @@ TODO:
 
 Optimize hyper-parameters(LR, Batch-Size)
 Reinforcement Learning
-Train in scale
 Monto Carlo Tree Search
+Train in scale

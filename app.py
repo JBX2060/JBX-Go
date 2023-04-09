@@ -26,6 +26,7 @@ def move():
         move = GoBot(board_tensor)
 
     move = move.argmax().item()
+    print(f"Backend move: {move}")  # Add this line
     return jsonify({"move": move})
 
 if __name__ == "__main__":
