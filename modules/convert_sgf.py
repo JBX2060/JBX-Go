@@ -1,4 +1,5 @@
 from sgfmill import sgf, boards, ascii_boards
+# from modules.sgfmill2.boards import Board
 from sgfmill.boards import Board
 from sgfmill.ascii_boards import render_board
 from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
@@ -21,7 +22,7 @@ def process_file(file_path):
     # python iter() method returns the iterator object, it is used to convert an iterable to the iterator.
     return iter(formatted_boards_labels)
 
-def process_files_in_parallel(file_paths, max_workers=16):
+def process_files_in_parallel(file_paths, max_workers=38):
     all_boards = []
     all_labels = []
 

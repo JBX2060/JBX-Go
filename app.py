@@ -21,6 +21,20 @@ def index():
 @app.route("/move", methods=["POST"])
 def move():
     input_board = request.json["board"]
+    # filter the board values 0 to -1(Empty positions), white = 1 to 0, black = -1 to 1.
+    
+    input_board = request.json["board"]
+
+    for pos in range(len(input_board)):
+        if input_board[pos] == 0:
+            input_board[pos] = -1
+        elif input_board[pos] == 1:
+            input_board[pos] = 0
+        elif input_board[pos] == -1:
+            input_board[pos] = 1
+
+
+
     board_tensor = torch.tensor(input_board, dtype=torch.float32)
     with torch.no_grad():
         move = GoBot(board_tensor)

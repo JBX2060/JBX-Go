@@ -1,96 +1,156 @@
 <!DOCTYPE html>
 <html lang="en">
-   <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>GoBot</title>
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/waltheri/wgo.js@master/wgo/wgo.player.css">
-      <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-      <script src="https://cdn.jsdelivr.net/gh/waltheri/wgo.js/wgo/wgo.min.js"></script>
-   </head>
-   <body>
-      <h1>Play Go against GoBot</h1>
-      <div id="board" style="width: 760px; height: 760px; margin: 0 auto;"></div>
-      <script>
-         document.addEventListener("DOMContentLoaded", function () {
-             var boardElement = document.getElementById("board");
-             var board = new WGo.Board(document.getElementById("board"), {
-             width: 760,
-             height: 760,
-             size: 19,
-             section: {
-         top: -0.5,
-         left: -0.5,
-         right: -0.5,
-         bottom: -0.5
-         }
-         });
-         var game = new WGo.Game();
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GoBot</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/waltheri/wgo.js@master/wgo/wgo.player.css"
+    />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/gh/waltheri/wgo.js/wgo/wgo.min.js"
+    ></script>
+  </head>
+  <body>
+    <h1>Play Go against GoBot</h1>
+    <div id="board" style="width: 760px; height: 760px; margin: 0 auto;"></div>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        var boardElement = document.getElementById("board");
+        var board = new WGo.Board(document.getElementById("board"), {
+          width: 760,
+          height: 760,
+          size: 19,
+          section: {
+            top: -0.5,
+            left: -0.5,
+            right: -0.5,
+            bottom: -0.5,
+          },
+        });
+        var game = new WGo.Game();
+
+        // Find captured stones and remove them from the board
+function removeCapturedStones(board) {
+  const currentState = board.getState();
+  const updatedObjects = [];
+
+  // Loop through all the stones on the board
+  currentState.objects.forEach((stone) => {
+    const neighbors = [
+      { x: stone.x - 1, y: stone.y },
+      { x: stone.x + 1, y: stone.y },
+      { x: stone.x, y: stone.y - 1 },
+      { x: stone.x, y: stone.y + 1 },
+    ];
+
+    let liberties = 0;
+
+    // Check the liberties for each stone
+    neighbors.forEach((neighbor) => {
+      const neighborStone = currentState.objects.find(
+        (obj) => obj.x === neighbor.x && obj.y === neighbor.y
+      );
+
+      if (!neighborStone) {
+        // Empty space - liberty found
+        liberties++;
+      } else if (neighborStone.c !== stone.c) {
+        // Opponent's stone - not a liberty
+      } else {
+        // Friendly stone - check if it is part of the same group
+        liberties++;
+      }
+    });
+
+    // If the stone has liberties, add it to the updatedObjects array
+    if (liberties > 0) {
+      updatedObjects.push(stone);
+    }
+  });
+
+  // Remove all objects from the board
+  board.removeAllObjects();
+
+  // Add back only the stones with liberties
+  updatedObjects.forEach((stone) => {
+    board.addObject(stone);
+  });
+}
+
+
+        function boardToArray(game) {
+          var array = [];
+          var position = game.get();
+          for (var x = 0; x < position.size; x++) {
+            for (var y = 0; y < position.size; y++) {
+              var stone = position.get(x, y);
+              array.push(stone);
+            }
+          }
+          return array;
+        }
+
+        var coordinates = {
+          // draw on grid layer
+          grid: {
+            draw: function (args, board) {
+              var ch,
+                t,
+                xright,
+                xleft,
+                ytop,
+                ybottom;
+
+              this.fillStyle = "rgba(0,0,0,0.7)";
+              this.textBaseline = "middle";
+              this.textAlign = "center";
+              this.font = board.stoneRadius + "px " + (board.font || "");
+
+              xright = board.getX(-0.75);
+              xleft = board.getX(board.size - 0.25);
+              ytop = board.getY(-0.75);
+              ybottom = board.getY(board.size - 0.25);
+
+              for (var i = 0; i < board.size; i++) {
+                ch = i + "A".charCodeAt(0);
+                if (ch >= "I".charCodeAt(0)) ch++;
+
+                t = board.getY(i);
+                this.fillText(board.size - i, xright, t);
+                this.fillText(board.size - i, xleft, t);
+
+                t = board.getX(i);
+                this.fillText(String.fromCharCode(ch), t, ytop);
+                this.fillText(String.fromCharCode(ch), t, ybottom);
+              }
+
+              this.fillStyle = "black";
+            },
+          },
+        };
+        board.addCustomObject(coordinates);
          
-         function boardToArray(game) {
-         var array = [];
-         var position = game.get();
-         for (var x = 0; x < position.size; x++) {
-         for (var y = 0; y < position.size; y++) {
-             var stone = position.get(x, y);
-             array.push(stone);
-         }
-         }
-         return array;
-         }
-         
-         
-         var coordinates = {
-         // draw on grid layer
-         grid: {
-         draw: function(args, board) {
-             var ch, t, xright, xleft, ytop, ybottom;
-             
-             this.fillStyle = "rgba(0,0,0,0.7)";
-             this.textBaseline="middle";
-             this.textAlign="center";
-             this.font = board.stoneRadius+"px "+(board.font || "");
-             
-             xright = board.getX(-0.75);
-             xleft = board.getX(board.size-0.25);
-             ytop = board.getY(-0.75);
-             ybottom = board.getY(board.size-0.25);
-             
-             for(var i = 0; i < board.size; i++) {
-                 ch = i+"A".charCodeAt(0);
-                 if(ch >= "I".charCodeAt(0)) ch++;
-                 
-                 t = board.getY(i);
-                 this.fillText(board.size-i, xright, t);
-                 this.fillText(board.size-i, xleft, t);
-                 
-                 t = board.getX(i);
-                 this.fillText(String.fromCharCode(ch), t, ytop);
-                 this.fillText(String.fromCharCode(ch), t, ybottom);
-             }
-             
-             this.fillStyle = "black";
-         }
-         }
-         }
-         board.addCustomObject(coordinates);
-         
-         function getBotMove(boardArray, callback) {
-         $.ajax({
-         url: '/move', // Make sure this matches the route in your app.py
-         method: 'POST',
-         contentType: 'application/json',
-         data: JSON.stringify({ board: boardArray }),
-         success: function (response) {
-         var move = response.move;
-         console.log("Frontend move:", move);  // Add this line
-         var x = move % board.size;
-         var y = Math.floor(move / board.size);
-         callback({ x: x, y: y });
-         }
-         });
-         }
-         
+        function getBotMove(boardArray, callback) {
+        $.ajax({
+        url: '/move', // Make sure this matches the route in your app.py
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ board: boardArray }),
+        success: function (response) {
+            var move = response.move;
+            console.log("Frontend move:", move);  // Add this line
+            var x = move % board.size;
+            var y = Math.floor(move / board.size);
+            callback({ x: x, y: y });
+        }
+        });
+        }
+
+        
+
          
          function gameToBoardArray(game) {
          var array = [];
@@ -100,6 +160,8 @@
              array.push(stone);
          }
          }
+
+
          return array;
          }
          
@@ -114,6 +176,8 @@
              y: move.y,
              c: WGo.W
          });
+        removeCapturedStones(board);
+
          });
          }
          
@@ -125,7 +189,8 @@
              y: y,
              c: WGo.B
          });
-         
+         removeCapturedStones(board);
+
          setTimeout(botMove, 1000); // Wait for 1 second (1000 milliseconds) before displaying the bot's move
          }
          });

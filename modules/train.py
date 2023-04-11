@@ -20,7 +20,7 @@ def training_loop(model, device, train_loader, test_loader, optim, loss_fn, n_ep
         print(f"EPOCH {epoch_idx}")
 
         # Wrap the train_loader with tqdm for a progress bar
-        for i, (inputs, labels) in tqdm(enumerate(train_loader), desc="Training"):
+        for inputs, labels in tqdm(train_loader, desc="Training"):
             board_batch, labels_batch = inputs.to(device), labels.to(device)
 
             # Use autocast for mixed-precision training
@@ -40,7 +40,7 @@ def training_loop(model, device, train_loader, test_loader, optim, loss_fn, n_ep
 
             total_loss += loss.item()
 
-            create_go_board_image(board_batch[0].cpu().numpy(), f"images/epoch_{epoch_idx}_batch_{i}.png")
+            # create_go_board_image(board_batch[0].cpu().numpy(), f"images/epoch_{epoch_idx}_batch_{i}.png")
 
 
         # Wrap the test_loader with tqdm for a progress bar

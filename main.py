@@ -21,10 +21,10 @@ def main():
     validation_boards = torch.from_numpy(validation_boards)
     validation_labels = torch.from_numpy(validation_labels)
 
-    train_boards = train_boards.to(device)
-    train_labels = train_labels.to(device)
-    validation_boards = validation_boards.to(device)
-    validation_labels = validation_labels.to(device)
+    # train_boards = train_boards.to(device)
+    # train_labels = train_labels.to(device)
+    # validation_boards = validation_boards.to(device)
+    # validation_labels = validation_labels.to(device)
 
     train_loader = DataLoader(list(zip(train_boards, train_labels)), shuffle=True, batch_size=batch_size)
     validation_loader = DataLoader(list(zip(validation_boards, validation_labels)), shuffle=True, batch_size=batch_size)
@@ -34,6 +34,7 @@ def main():
     optim = torch.optim.Adam(GoBot.parameters(), learning_rate)
 
     trained_model = training_loop(GoBot, device, train_loader, validation_loader, optim, loss_fn, n_epochs=10000)
+    # TODO: MCTS
     torch.save(trained_model.state_dict(), "model_test.pth")
 
 if __name__ == "__main__":

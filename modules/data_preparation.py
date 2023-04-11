@@ -5,22 +5,23 @@ from modules.convert_sgf import process_files_in_parallel
 
 
 # 'boards_extra_full', 'labels_extra_full', 'boards_full.npy', 'labels_full.npy', 'boards_large.npy', 'labels_large.npy', 'boards.npy', 'labels.npy'
-boards_path = 'proccesed_data/boards_extra_full.npy'
-labels_path = 'proccesed_data/labels_extra_full.npy'
+processed_data_path = 'bot_data/kata2'
 
-procces_data_path = 'bot_data/kata2'
+boards_path = '/home/jbx2060/JBX2020/proccesed_data/kata2_boards.npy'
+labels_path = '/home/jbx2060/JBX2020/proccesed_data/kata2_labels.npy'
 
 
-def load_data():
+
+def load_data(boards_path=boards_path, labels_path=labels_path, processed_data_path=processed_data_path):
     if os.path.exists(boards_path) and os.path.exists(labels_path):
         print("Loading Training Dataset...")
         boards = np.load(boards_path)
         labels = np.load(labels_path
     )
-
+     
     else:
         print("Processing data...")
-        file_paths = [os.path.join(procces_data_path, file_name) for file_name in os.listdir(procces_data_path)]
+        file_paths = [os.path.join(processed_data_path, file_name) for file_name in os.listdir(processed_data_path)]
         boards, labels = process_files_in_parallel(file_paths)
 
         np.save(boards_path, boards)

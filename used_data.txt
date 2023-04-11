@@ -1,0 +1,18 @@
+
+2020-12-31rating.tar.bz2
+2021-01-01rating.tar.bz2
+
+2020-12-28rating.tar.bz2
+2020-12-27rating.tar.bz2
+
+2021-02-10rating.tar.bz2
+2021-02-11rating.tar.bz2
+
+# kata2
+2021-02-27rating.tar.bz2
+2021-02-28rating.tar.bz2
+
+2021-03-01rating.tar.bz2
+2021-03-02rating.tar.bz2
+
+# kata 3
