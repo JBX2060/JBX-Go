@@ -53,7 +53,7 @@ class ResidualBlock(nn.Module):
         # Used to bypass convolutional layers if they are not useful...
         out += identity
         out = self.relu(out)
-        return out
+        return outf
 
 class Model(nn.Module):
     def __init__(self, num_res_blocks=19, channels=256):

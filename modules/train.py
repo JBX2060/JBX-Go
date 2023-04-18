@@ -26,7 +26,11 @@ def training_loop(model, device, train_loader, test_loader, optim, loss_fn, n_ep
             # Use autocast for mixed-precision training
             with autocast():
                 output = model(board_batch)
-                loss = loss_fn(output, labels_batch)
+                try:
+                    loss = loss_fn(output, labels_batch)
+                except:
+                    print("error occured invalid training data")
+                    continue
 
             # Optimize the gradients using GradScaler
             scaler.scale(loss).backward()

@@ -7,8 +7,8 @@ from modules.convert_sgf import process_files_in_parallel
 # 'boards_extra_full', 'labels_extra_full', 'boards_full.npy', 'labels_full.npy', 'boards_large.npy', 'labels_large.npy', 'boards.npy', 'labels.npy'
 processed_data_path = 'bot_data/kata2'
 
-boards_path = '/home/jbx2060/JBX2020/proccesed_data/kata2_boards.npy'
-labels_path = '/home/jbx2060/JBX2020/proccesed_data/kata2_labels.npy'
+boards_path = '/home/jbx2060/JBX2020/proccesed_data/boards_large_human.npy'
+labels_path = '/home/jbx2060/JBX2020/proccesed_data/labels_large_human.npy'
 
 
 
