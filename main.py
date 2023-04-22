@@ -6,10 +6,16 @@ from modules.model import Model, load_model
 from modules.train import training_loop
 from torch.utils.data import DataLoader
 
+# from torch.utils.data import Dataset
+# from torchvision.transforms import Compose, RandomHorizontalFlip, RandomVerticalFlip, Lambda, ToTensor
+# import numpy as np
+
+
 def main(num_epochs):
     loss_fn = nn.CrossEntropyLoss()
     learning_rate = 0.0001
     batch_size = 1150
+    patience = 4
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("Using ", device)
@@ -24,12 +30,11 @@ def main(num_epochs):
 
     train_loader = DataLoader(list(zip(train_boards, train_labels)), shuffle=True, batch_size=batch_size)
     validation_loader = DataLoader(list(zip(validation_boards, validation_labels)), shuffle=True, batch_size=batch_size)
-
-
-    GoBot = load_model("model_test.pth", device)
+    
+    GoBot = load_model("model.pth", device)
     optim = torch.optim.Adam(GoBot.parameters(), learning_rate)
 
-    training_loop(GoBot, device, train_loader, validation_loader, optim, loss_fn, num_epochs)
+    training_loop(GoBot, device, train_loader, validation_loader, optim, loss_fn, num_epochs, patience)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

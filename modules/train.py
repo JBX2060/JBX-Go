@@ -1,13 +1,15 @@
 import sys
 import torch
-from modules.early_stopping import EarlyStopper
 from modules.visualize import create_go_board_image
 
 from tqdm import tqdm
 from torch.cuda.amp import GradScaler, autocast
 
-def training_loop(model, device, train_loader, test_loader, optim, loss_fn, n_epochs=10000):
+def training_loop(model, device, train_loader, validation_loader, optim, loss_fn, n_epochs=10000, patience=4):
+
     scaler = GradScaler()
+    best_val_loss = float('inf')
+    no_improvement_counter = 0
 
     for epoch_idx in range(n_epochs):
         correct = 0
@@ -47,10 +49,12 @@ def training_loop(model, device, train_loader, test_loader, optim, loss_fn, n_ep
             # create_go_board_image(board_batch[0].cpu().numpy(), f"images/epoch_{epoch_idx}_batch_{i}.png")
 
 
-        # Wrap the test_loader with tqdm for a progress bar
-        for inputs, labels in tqdm(test_loader, desc="Evaluating"):
-            board_batch, labels_batch = inputs.to(device), labels.to(device)
+        # Wrap the validation_loader with tqdm for a progress bar
+        for inputs, labels in tqdm(validation_loader, desc="Evaluating"):
 
+            board_batch, labels_batch = inputs.to(device), labels.to(device)
+            # print(board_batch.shape, labels_batch.shape)
+            
             # Validation
             with torch.no_grad(), autocast():
                 validation_output = model(board_batch)
@@ -68,23 +72,32 @@ def training_loop(model, device, train_loader, test_loader, optim, loss_fn, n_ep
         accuracy = correct / total_times * 100
         test_accuracy = test_correct / total_test_times * 100
 
+        validation_loss = test_total_loss / total_test_times
+        loss = total_loss / total_times
+
         print("Accuracy: ", accuracy)
         print("Test Accuracy: ", test_accuracy)
 
-        print("Avg Loss: ", total_loss / total_times)
-        print(f"Avg Test Loss: {test_total_loss / total_test_times}")
+        print(f"Avg Loss: {loss}")
+        print(f"Avg Test Loss: {validation_loss}")
 
-        early_stopper = EarlyStopper(patience=3, min_delta=10)
+        # Update best_val_loss and no_improvement_counter
+        if validation_loss < best_val_loss:
+            best_val_loss = validation_loss
+            no_improvement_counter = 0
+        else:
+            no_improvement_counter += 1
 
-
-        if early_stopper.early_stop(test_total_loss / total_test_times):
+        # Check for early stopping
+        if no_improvement_counter >= patience:
+            print("Early stopping triggered")
             print("We are at epoch:", epoch_idx)
             break
 
         try:
-            torch.save(model.state_dict(), "model_test.pth")
+            torch.save(model.state_dict(), "model.pth")
 
         except KeyboardInterrupt:
             print("Saving ...")
-            torch.save(model.state_dict(), "model_test.pth")
+            torch.save(model.state_dict(), "model.pth")
             sys.exit()

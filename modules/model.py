@@ -53,10 +53,12 @@ class ResidualBlock(nn.Module):
         # Used to bypass convolutional layers if they are not useful...
         out += identity
         out = self.relu(out)
-        return outf
+        return out
 
 class Model(nn.Module):
-    def __init__(self, num_res_blocks=19, channels=256):
+
+    def __init__(self, num_res_blocks=6, channels=128, dropout_rate=0.5):
+
         super(Model, self).__init__()
 
         self.conv_input = nn.Conv2d(3, channels, kernel_size=3, padding=1)
@@ -77,6 +79,8 @@ class Model(nn.Module):
 
         # self.softmax = nn.Softmax(dim=1)
 
+        self.dropout = nn.Dropout(dropout_rate)
+
 
     def forward(self, board):
         # Convert the flat board representation to a 3-channel representation
@@ -92,8 +96,13 @@ class Model(nn.Module):
         # extract more abstract and high-level features from the input
         policy = self.conv_policy(x)
         policy = self.bn_policy(policy)
+        
         # apply the ReLU activation function to the output of the batch normalization layer
         policy = self.relu_policy(policy)
+
+        # Add dropout to the output of the ReLU activation function
+        policy = self.dropout(policy) 
+
         # flatten the output of the convolutional layer
         policy = policy.view(policy.size(0), -1)
         # apply the fully connected layer to the output of the convolutional layer

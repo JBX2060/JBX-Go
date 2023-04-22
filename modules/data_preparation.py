@@ -5,10 +5,10 @@ from modules.convert_sgf import process_files_in_parallel
 
 
 # 'boards_extra_full', 'labels_extra_full', 'boards_full.npy', 'labels_full.npy', 'boards_large.npy', 'labels_large.npy', 'boards.npy', 'labels.npy'
-processed_data_path = 'bot_data/kata2'
+processed_data_path = '/home/jbx2060/JBX2020/go_data/kgs-19-2011'
 
-boards_path = '/home/jbx2060/JBX2020/proccesed_data/boards_large_human.npy'
-labels_path = '/home/jbx2060/JBX2020/proccesed_data/labels_large_human.npy'
+boards_path = '/home/jbx2060/JBX2020/proccesed_data/kgs-19099-boards.npy'
+labels_path = '/home/jbx2060/JBX2020/proccesed_data/kgs-19099-labels.npy'
 
 
 
@@ -16,8 +16,7 @@ def load_data(boards_path=boards_path, labels_path=labels_path, processed_data_p
     if os.path.exists(boards_path) and os.path.exists(labels_path):
         print("Loading Training Dataset...")
         boards = np.load(boards_path)
-        labels = np.load(labels_path
-    )
+        labels = np.load(labels_path)
      
     else:
         print("Processing data...")
@@ -28,6 +27,7 @@ def load_data(boards_path=boards_path, labels_path=labels_path, processed_data_p
         np.save(labels_path, labels)
 
     return boards, labels
+
 
 
 def prepare_data(boards, labels):

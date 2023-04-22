@@ -14,6 +14,10 @@
 2021-03-01rating.tar.bz2
 2021-03-02rating.tar.bz2
 
+
+2022-11-26rating.tar.bz2  2022-11-28rating.tar.bz2  2022-11-30rating.tar.bz2  
+2022-11-27rating.tar.bz2  2022-11-29rating.tar.bz2  
+
 # kata 3
 
 200, 000

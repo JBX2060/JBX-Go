@@ -1,5 +1,9 @@
-import numpy as np
+"""Go board representation."""
+
 from itertools import chain
+import functools
+
+from .common import opponent_of
 
 class _Group:
     """Represent a solidly-connected group.
@@ -27,6 +31,22 @@ class _Region:
         self.points = set()
         self.neighbouring_colours = set()
 
+@functools.lru_cache(maxsize=30)
+def _get_all_board_points(side):
+    return [(_row, _col) for _row in range(side) for _col in range(side)]
+
+@functools.lru_cache(maxsize=30*30*4)
+def _get_neighbours(row, col, side):
+    neighbours = tuple()
+    for r, c in [(row-1, col), (row+1, col), (row, col-1), (row, col+1)]:
+        if (0 <= r < side) and (0 <= c < side):
+            neighbours += ((r, c),)
+    return neighbours
+
+@functools.lru_cache(maxsize=30*30*4)
+def _get_neighbours_and_self(row, col, side):
+    return _get_neighbours(row, col, side) + ((row, col),)
+
 class Board:
     """A legal Go position.
 
@@ -41,82 +61,67 @@ class Board:
         self.side = side
         if side < 2:
             raise ValueError
-        self.board_points = np.array(np.meshgrid(np.arange(side), np.arange(side))).T.reshape(-1, 2)
-        self.board = np.full((side, side), None)
+        self._board_points = _get_all_board_points(side)
+        self.board = []
+        for row in range(side):
+            self.board.append([None] * side)
         self._is_empty = True
-        self._group_cache = {}
-        self._region_cache = {}
+
+    @property
+    def board_points(self):
+        # Returns a copy so that modifying it is safe
+        return self._board_points[:]
 
     def copy(self):
         """Return an independent copy of this Board."""
         b = Board(self.side)
-        b.board = np.copy(self.board)
+        b.board = [self.board[i][:] for i in range(self.side)]
         b._is_empty = self._is_empty
         return b
 
-    def _process_points(self, row, col, process_function):
+    def _make_group(self, row, col, colour):
         points = set()
-        to_handle = [np.array([row, col])]
-
+        is_surrounded = True
+        to_handle = set()
+        to_handle.add((row, col))
         while to_handle:
             point = to_handle.pop()
-            points.add(tuple(point))
+            points.add(point)
             r, c = point
-            neighbours = np.array([(r-1, c), (r+1, c), (r, c-1), (r, c+1)])
-            valid_neighbours = neighbours[np.logical_and(np.all(neighbours >= 0, axis=1), 
-                                                         np.all(neighbours < self.side, axis=1))]
-            for neighbour in valid_neighbours:
-                process_function(point, neighbour, points, to_handle)
-
-        return points
-
-    def _make_group(self, row, col, colour):
-        point = (row, col)
-        if point in self._group_cache:
-            return self._group_cache[point]
-
-        is_surrounded = [True]
-
-        def process_group_points(point, neighbour, points, to_handle):
-            r1, c1 = neighbour
-            neigh_colour = self.board[r1][c1]
-            if neigh_colour is None:
-                is_surrounded[0] = False
-            elif neigh_colour == colour:
-                if tuple(neighbour) not in points:
-                    to_handle.append(neighbour)
-
-        points = self._process_points(row, col, process_group_points)
+            for neighbour in _get_neighbours(r, c, self.side):
+                (r1, c1) = neighbour
+                neigh_colour = self.board[r1][c1]
+                if neigh_colour is None:
+                    is_surrounded = False
+                elif neigh_colour == colour:
+                    if neighbour not in points:
+                        to_handle.add(neighbour)
         group = _Group()
         group.colour = colour
         group.points = points
-        group.is_surrounded = is_surrounded[0]
-        for p in points:
-            self._group_cache[p] = group
+        group.is_surrounded = is_surrounded
         return group
 
     def _make_empty_region(self, row, col):
-        point = (row, col)
-        if point in self._region_cache:
-            return self._region_cache[point]
-
+        points = set()
         neighbouring_colours = set()
-
-        def process_region_points(point, neighbour, points, to_handle):
-            r1, c1 = neighbour
-            neigh_colour = self.board[r1][c1]
-            if neigh_colour is None:
-                if tuple(neighbour) not in points:
-                    to_handle.append(neighbour)
-            else:
-                neighbouring_colours.add(neigh_colour)
-
-        points = self._process_points(row, col, process_region_points)
+        to_handle = set()
+        to_handle.add((row, col))
+        while to_handle:
+            point = to_handle.pop()
+            points.add(point)
+            r, c = point
+            for neighbour in _get_neighbours(r, c, self.side):
+                (r1, c1) = neighbour
+                neigh_colour = self.board[r1][c1]
+                if neigh_colour is None:
+                    if neighbour not in points:
+                        to_handle.add(neighbour)
+                else:
+                    neighbouring_colours.add(neigh_colour)
         region = _Region()
         region.points = points
         region.neighbouring_colours = neighbouring_colours
-        for p in points:
-            self._region_cache[p] = region
         return region
 
     def _find_surrounded_groups(self, r, c):
@@ -127,10 +132,7 @@ class Board:
         """
         surrounded = []
         handled = set()
-        for (row, col) in [(r, c), (r-1, c), (r+1, c), (r, c-1), (r, c+1)]:
-            if not ((0 <= row < self.side) and (0 <= col < self.side)):
-                continue
-
+        for (row, col) in _get_neighbours_and_self(r, c, self.side):
             colour = self.board[row][col]
             if colour is None:
                 continue
@@ -151,66 +153,142 @@ class Board:
         Returns a list of _Groups.
 
         """
-        return self._find_surrounded_groups()
-    
+        surrounded = []
+        handled = set()
+        for (row, col) in self._board_points:
+            colour = self.board[row][col]
+            if colour is None:
+                continue
+            point = (row, col)
+            if point in handled:
+                continue
+            group = self._make_group(row, col, colour)
+            if group.is_surrounded:
+                surrounded.append(group)
+            handled.update(group.points)
+        return surrounded
+
     def is_empty(self):
+        """Return a boolean indicating whether the board is empty."""
         return self._is_empty
 
     def get(self, row, col):
+        """Return the state of the specified point.
+
+        Returns a colour, or None for an empty point.
+
+        Raises IndexError if the coordinates are out of range.
+
+        """
         if row < 0 or col < 0:
             raise IndexError
-        return self.board[row, col]
+        return self.board[row][col]
 
     def play(self, row, col, colour):
+        """Play a move on the board.
+
+        Raises IndexError if the coordinates are out of range.
+
+        Raises ValueError if the specified point isn't empty.
+
+        Performs any necessary captures. Allows self-captures. Doesn't enforce
+        any ko rule.
+
+        Returns the point forbidden by simple ko, or None
+
+        """
         if row < 0 or col < 0:
             raise IndexError
-        opponent = 1 if colour == -1 else -1
-        if self.board[row, col] is not None:
+        opponent = opponent_of(colour)
+        if self.board[row][col] is not None:
             raise ValueError
-        self.board[row, col] = colour
+        self.board[row][col] = colour
         self._is_empty = False
         surrounded = self._find_surrounded_groups(row, col)
         simple_ko_point = None
-
         if surrounded:
-            surrounded_len = [len(group.points) for group in surrounded]
-            if len(surrounded) == 1 and np.sum(surrounded_len) == self.side * self.side:
-                self._is_empty = True
+            if len(surrounded) == 1:
+                to_capture = surrounded
+                if len(to_capture[0].points) == self.side*self.side:
+                    self._is_empty = True
             else:
-                to_capture = [group for group in surrounded if group.colour == opponent]
+                to_capture = [group for group in surrounded
+                              if group.colour == opponent]
                 if len(to_capture) == 1 and len(to_capture[0].points) == 1:
-                    self_capture = [group for group in surrounded if group.colour == colour]
+                    self_capture = [group for group in surrounded
+                                    if group.colour == colour]
                     if len(self_capture[0].points) == 1:
-                        simple_ko_point = list(to_capture[0].points)[0]
+                        (simple_ko_point,) = to_capture[0].points
             for group in to_capture:
                 for r, c in group.points:
-                    self.board[r, c] = None
+                    self.board[r][c] = None
         return simple_ko_point
 
     def apply_setup(self, black_points, white_points, empty_points):
+        """Add setup stones or removals to the position.
+
+        This is intended to support SGF AB/AW/AE commands.
+
+        Each parameter is an iterable of coordinate pairs (row, col).
+
+        Applies all the setup specifications, then removes any groups with no
+        liberties (so the resulting position is always legal).
+
+        If the same point is specified in more than one list, the order in which
+        they're applied is undefined.
+
+        Returns a boolean saying whether the position was legal as specified.
+
+        Raises IndexError if any coordinates are out of range.
+
+        """
         for (row, col) in chain(black_points, white_points, empty_points):
             if row < 0 or col < 0 or row >= self.side or col >= self.side:
                 raise IndexError
-        self.board[tuple(zip(*black_points))] = 'b'
-        self.board[tuple(zip(*white_points))] = 'w'
-        self.board[tuple(zip(*empty_points))] = None
+        for (row, col) in black_points:
+            self.board[row][col] = 'b'
+        for (row, col) in white_points:
+            self.board[row][col] = 'w'
+        for (row, col) in empty_points:
+            self.board[row][col] = None
         captured = self._find_all_surrounded_groups()
         for group in captured:
-            self.board[tuple(zip(*group.points))] = None
-        self._is_empty = np.all(self.board == None)
+            for row, col in group.points:
+                self.board[row][col] = None
+        self._is_empty = True
+        for (row, col) in self._board_points:
+            if self.board[row][col] is not None:
+                self._is_empty = False
+                break
         return not(captured)
 
     def list_occupied_points(self):
-        occupied_points = np.argwhere(self.board != None)
-        colours = self.board[self.board != None]
-        return list(zip(colours, [tuple(point) for point in occupied_points]))
+        """List all nonempty points.
+
+        Returns a list of pairs (colour, (row, col))
+
+        """
+        result = []
+        for (row, col) in self._board_points:
+            colour = self.board[row][col]
+            if colour is not None:
+                result.append((colour, (row, col)))
+        return result
 
     def area_score(self):
-        scores = {'b': 0, 'w': 0}
-        handled = set()
+        """Calculate the area score of a position.
 
-        for row, col in self.board_points:
-            colour = self.board[row, col]
+        Assumes all stones are alive.
+
+        Returns black score minus white score.
+
+        Doesn't take komi into account.
+
+        """
+        scores = {'b' : 0, 'w' : 0}
+        handled = set()
+        for (row, col) in self._board_points:
+            colour = self.board[row][col]
             if colour is not None:
                 scores[colour] += 1
                 continue
@@ -224,4 +302,3 @@ class Board:
                     scores[colour] += region_size
             handled.update(region.points)
         return scores['b'] - scores['w']
-
